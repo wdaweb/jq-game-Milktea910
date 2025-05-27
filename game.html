@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Aim Lab 簡易版</title>
+    <link rel="stylesheet" href="./style/style.css">
+</head>
+
+<body>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <div id="gameArea">
+        <!-- 記分板 -->
+        <div id="scoreBoard">
+            分數：<span id="score">0</span> ｜ 命中率：<span id="accuracy">0%</span> ｜ 時間：<span id="time">30</span> 秒
+        </div>
+        <!-- 排行榜 -->
+        <div id="leaderBoard">
+            <h3>排行榜</h3>
+            <ol id="leaderboardList"></ol>
+        </div>
+
+        <!-- 難度按鈕 -->
+        <div id="difficulty">
+            <p>選擇目標速度：</p>
+            <button class="diffBtn1" data-speed="2000" value="簡單">簡單</button>
+            <button class="diffBtn2" data-speed="1000" value="普通">普通</button>
+            <button class="diffBtn3" data-speed="800" value="困難">困難</button>
+        </div>
+        <!-- 開始按鈕 -->
+        <button id="startBtn" disabled>開始遊戲</button>
+    </div>
+    <script>
+        let score = 0;
+        let totalClicks = -2;
+        let timeLeft = 30;
+        let isPlaying = false;
+        let gameInterval, countdownTimer;
+        let spawnSpeed = 1000;
+        let diff = ''
+
+        // 生成紅點
+        function spawnTarget() {
+            const size = 50;
+            const gameArea = $('#gameArea');
+            const x = Math.random() * (gameArea.width() - size);
+            const y = Math.random() * (gameArea.height() - size);
+
+            // 隨機選擇距離層級
+            const depthClasses = ['near', 'mid', 'far'];
+            const depthClass = depthClasses[Math.floor(Math.random() * depthClasses.length)];
+
+            const target = $('<div class="target"></div>').addClass(depthClass);
+            target.css({ left: x + 'px', top: y + 'px' });
+
+            target.click(function (e) {
+                e.stopPropagation();
+                score++;
+                totalClicks++;
+                $('#score').text(score);
+                updateAccuracy();
+                $(this).remove();
+            });
+
+            gameArea.append(target);
+        }
+
+
+        // 命中率
+        function updateAccuracy() {
+            let accuracy = score > 0 ? ((score + 1) / totalClicks * 100).toFixed(1) : 0;
+            $('#accuracy').text(accuracy + '%');
+        }
+
+        // 開始遊戲
+        function startGame() {
+            isPlaying = true;
+            score = 0;
+            totalClicks = 0;
+            timeLeft = 30;
+            $('#score').text(score);
+            $('#accuracy').text('0%');
+            $('#time').text(timeLeft);
+            $('#startBtn').hide();
+            $('#difficulty').hide();
+            $('#leaderBoard').hide();
+            $('.target').remove();
+            document.documentElement.requestFullscreen()
+            $('#gameArea').off('click').on('click', function () {
+                if (!isPlaying) return;
+                totalClicks++;
+                updateAccuracy();
+            });
+
+            spawnTarget();
+
+            gameInterval = setInterval(() => {
+                $('.target').remove();
+                spawnTarget();
+            }, spawnSpeed);
+
+            countdownTimer = setInterval(() => {
+                timeLeft--;
+                $('#time').text(timeLeft);
+                if (timeLeft === 0) {
+                    $('.target').remove();
+                    clearInterval(gameInterval);
+                    clearInterval(countdownTimer);
+                    document.exitFullscreen();
+                    Swal.fire({
+                        title: '遊戲結束',
+                        text: '請輸入名字',
+                        input: 'text'
+                    }).then(result => {
+                        const name = result.value || 'unknow'
+                        endGame(name)
+                    })
+
+                };
+            }, 1000);
+        }
+
+        // 遊戲結束
+        function endGame(name) {
+            isPlaying = false;
+            $('#startBtn').show().text('再玩一次');
+            $('#difficulty').show();
+            $('#leaderBoard').show();
+
+            // 儲存分數並更新排行榜
+            let finalAccuracy = score > 0 ? ((score + 1) / totalClicks * 100).toFixed(1) : 0;
+            saveScoreToLeaderboard(score, finalAccuracy, name, diff);
+            updateLeaderboard();
+
+            $('.diffBtn').attr('disabled', false).removeClass('disabled');
+        }
+
+        function saveScoreToLeaderboard(score, accuracy, name, mode) {
+            let leaderboard = JSON.parse(localStorage.getItem('aimlabLeaderboard')) || [];
+            leaderboard.push({ name: name, score: score, accuracy: accuracy, mode: mode });
+
+            // 排序依據：先比分數，再比命中率
+            leaderboard.sort((a, b) => {
+                if (b.score === a.score) {
+                    return parseFloat(b.accuracy) - parseFloat(a.accuracy);
+                }
+                return b.score - a.score;
+            });
+
+            // 只保留前5名
+            leaderboard = leaderboard.slice(0, 5);
+
+            localStorage.setItem('aimlabLeaderboard', JSON.stringify(leaderboard));
+        }
+
+        function updateLeaderboard() {
+            let leaderboard = JSON.parse(localStorage.getItem('aimlabLeaderboard')) || [];
+            let list = $('#leaderboardList');
+            list.empty();
+
+            leaderboard.forEach(entry => {
+                list.append(`<li><span class="name-ellipsis" title="${entry.name}">${entry.name}</span>｜分數：${entry.score}｜命中率：${entry.accuracy}%｜模式：${entry.mode}</li>`);
+            });
+        }
+        function fullscrean() {
+            Swal.fire({
+                title: '歡迎來到網頁版AimLab',
+                text: '請按下F11進入全螢幕模式獲得良好的遊戲體驗',
+            })
+        }
+
+
+        // 難度選擇
+        $('.diffBtn1').click(function () {
+            spawnSpeed = parseInt($(this).data('speed'));
+            $('.diffBtn2').attr('disabled', false).removeClass('disabled');
+            $('.diffBtn3').attr('disabled', false).removeClass('disabled');
+            $(this).attr('disabled', true).addClass('disabled');
+            $('#startBtn').attr('disabled', false);
+            diff = $('.diffBtn1').attr('value')
+        });
+        $('.diffBtn2').click(function () {
+            spawnSpeed = parseInt($(this).data('speed'));
+            $('.diffBtn1').attr('disabled', false).removeClass('disabled');
+            $('.diffBtn3').attr('disabled', false).removeClass('disabled');
+            $(this).attr('disabled', true).addClass('disabled');
+            $('#startBtn').attr('disabled', false);
+            diff = $('.diffBtn2').attr('value')
+        });
+        $('.diffBtn3').click(function () {
+            spawnSpeed = parseInt($(this).data('speed'));
+            $('.diffBtn2').attr('disabled', false).removeClass('disabled');
+            $('.diffBtn1').attr('disabled', false).removeClass('disabled');
+            $(this).attr('disabled', true).addClass('disabled');
+            $('#startBtn').attr('disabled', false);
+            diff = $('.diffBtn3').attr('value')
+        });
+
+
+        $('#startBtn').click(startGame);
+        // 頁面載入時載入排行榜
+        updateLeaderboard();
+        fullscrean()
+    </script>
+</body>
+
+</html>

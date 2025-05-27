@@ -1,0 +1,107 @@
+        body {
+            margin: 0;
+            background-color: #111;
+            font-family: sans-serif;
+            overflow: hidden;
+            color: white;
+        }
+
+        #gameArea {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: url(../images/background.png) no-repeat;
+            background-position: center;
+            cursor: url(../images/frontsight50_w.png) 25 25, auto;
+        }
+
+        .target {
+            width: 50px;
+            height: 50px;
+            background: url(../images/target.png);
+            border-radius: 50%;
+            position: absolute;
+            cursor: url(../images/frontsight50_w.png) 25 25, auto;
+        }
+
+        #scoreBoard {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 18px;
+            z-index: 10;
+            user-select: none;
+        }
+
+        #leaderBoard {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 16px;
+            width: 470px;
+
+            h3 {
+                text-align: center;
+            }
+        }
+
+        #startBtn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            padding: 12px 24px;
+            font-size: 20px;
+            cursor: url(../images/frontsight50_w.png) 25 25, auto;
+        }
+
+        #difficulty {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            text-align: center;
+        }
+
+        .name-ellipsis {
+            display: inline-block;
+            max-width: 115px;
+            /* 根據需要調整 */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            vertical-align: bottom;
+        }
+
+        .diffBtn1,
+        .diffBtn2,
+        .diffBtn3 {
+            margin: 5px;
+            padding: 10px 16px;
+            font-size: 16px;
+            cursor: url(../images/frontsight50_w.png) 25 25, auto;
+        }
+
+        /* 目標景深樣式 */
+        .target.near {
+            transform: scale(1.2);
+            filter: blur(0px);
+            /* opacity: 1; */
+            z-index: 3;
+        }
+
+        .target.mid {
+            transform: scale(0.8);
+            filter: blur(1px);
+            /* opacity: 0.7; */
+            z-index: 2;
+        }
+
+        .target.far {
+            transform: scale(0.5);
+            filter: blur(2px);
+            /* opacity: 0.5; */
+            z-index: 1;
+        }
